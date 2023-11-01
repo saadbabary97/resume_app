@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/3.1/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 
@@ -37,13 +38,15 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'corsheaders',
     'rest_framework',
+    'rest_framework.authtoken',
     'test_app',
+    'media_file',
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -71,6 +74,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'test_project.wsgi.application'
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 # Database
@@ -79,7 +83,7 @@ WSGI_APPLICATION = 'test_project.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',  
-        'NAME': 'mydatabase',  
+        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
         'USER': 'mydbuser',    
         'PASSWORD': 'mypassword',  
         'HOST': 'localhost',   
@@ -91,12 +95,26 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
     ),
-    # TODO remove duplicate key entry
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.TokenAuthentication',
+    ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
-    'TIME_INPUT_FORMATS': ('%H:%M',)}
+    'TIME_INPUT_FORMATS': ('%H:%M',),
+}
 
+
+
+# AUTHENTICATION_BACKENDS = [
+#     'django.contrib.auth.backends.ModelBackend',
+# ]
+
+# AUTHENTICATION_CLASSES = (
+#     'django.contrib.auth.backends.ModelBackend',  # Use the default ModelBackend for authentication.
+# )
+
+AUTH_USER_MODEL = 'auth.User' 
 
 # Password validation
 # https://docs.djangoproject.com/en/3.1/ref/settings/#auth-password-validators
@@ -136,4 +154,31 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
-CORS_ALLOWED_ORIGINS = ['http://localhost:3030',]
+CORS_ALLOW_ALL_ORIGINS = False
+
+CORS_ALLOWED_ORIGINS = [
+    'http://localhost:3030', 
+    'http://127.0.0.1:9001',  
+]
+
+CORS_ALLOW_CREDENTIALS = True
+
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# Media settings
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_URL = '/media/'
+
+
+LOGIN_URL = '/accounts/login/'  
+
+DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  
+
+# settings.py
+FILE_UPLOAD_HANDLERS = [
+    "django.core.files.uploadhandler.MemoryFileUploadHandler",
+    "django.core.files.uploadhandler.TemporaryFileUploadHandler",
+]
+
+DATA_UPLOAD_MAX_MEMORY_SIZE = 50 * 1024 * 1024
