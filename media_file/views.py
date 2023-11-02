@@ -1,11 +1,13 @@
 from django.shortcuts import render
+from media_file.serializers import PhotoSerializer, VideoSerializer
 from .models import Post, PostMedia
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 import json
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated, AllowAny
 # Get request for Media files
 
 
@@ -38,35 +40,55 @@ def get_posts(request):
 
 # Post request for Media files
 
-@csrf_exempt
+# @csrf_exempt
+@api_view(['POST'])
+@permission_classes([AllowAny])
 def create_post(request):
-    if request.method == 'POST':
-        try:
-            post_data = json.loads(request.body)
-            title = post_data.get('title', '')
-            user_data = post_data.get('user', {})
+    try:
+        post_data = request.data
+        images = post_data.getlist('images', [])
+        videos = post_data.getlist('videos', [])
+        stickers = post_data.get('stickers', '')
+        username = request.POST.get('user[username]', '')
+        email = request.POST.get('user[email]', '')
+        title = post_data.get('title', '')
+        is_subpost = post_data.get('is_subpost', False)
+        print('title:',title)
+        print('username:',username)
+        print('email:',email)
+        print('Videos:', videos)
+        print('Images:',images)
 
-            user, created = User.objects.get_or_create(
-                username=user_data.get('username', ''),
-                email=user_data.get('email', '')
-            )
+        user, created = User.objects.get_or_create(username=username, email=email)
 
-            post = Post.objects.create(title=title, user=user)
+        post = Post.objects.create(title=title, user=user, is_subpost=is_subpost)
 
-            videos = post_data.get('videos', '')
-            if videos and (videos.endswith(('.mp4', '.mov'))):
-                PostMedia.objects.create(post=post, video=videos)
+        serialized_objects = []
 
-            images = post_data.get('images', [])
-            # for image in images:
-            if images.endswith(('.jpg', '.png', '.jpeg')):
-                print('<image>:',images)
-                PostMedia.objects.create(post=post, image=images)
+        for video in videos:
+            subpost = Post.objects.create(user=user, is_subpost=True)
+            post_video = PostMedia.objects.create(video=video, post=post, subpost=subpost)
+            serializer = VideoSerializer(post_video)
+            serialized_objects.append(serializer.data)
 
-            stickers = post_data.get('stickers', '')
-            if stickers:
-                PostMedia.objects.create(post=post, stickers=stickers)
+        for image in images:
+            subpost = Post.objects.create(is_subpost=True, user=user)
+            post_image = PostMedia.objects.create(image=image, post=post, subpost=subpost)
+            serializer = PhotoSerializer(post_image)
+            serialized_objects.append(serializer.data)
 
-            return JsonResponse({'message': 'Post created successfully'})
-        except Exception as e:
-            return HttpResponse({'error': str(e)}, status=500)
+        if stickers:
+            PostMedia.objects.create(post=post, stickers=stickers)
+
+        if is_subpost:
+            subpost_data = post_data.get('subpost', {})
+            subpost = Post.objects.create(title=subpost_data.get('title', ''), user=user, is_subpost=True)
+            PostMedia.objects.create(post=post, subpost=subpost)
+
+        return JsonResponse({'message': serialized_objects})
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(str(e))
+
+        return JsonResponse({'error': str(e)}, status=500)

@@ -5,5 +5,16 @@ from .models import PostMedia
 class PhotoSerializer(serializers.ModelSerializer):
     class Meta:
         model = PostMedia
-        fields = ('image',)
+        fields = ['image']
 
+class VideoSerializer(serializers.ModelSerializer):
+    
+    class Meta:
+        model = PostMedia
+        fields = ['video']
+
+class StickerSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = PostMedia
+        fields = ['stickers']
