@@ -27,4 +27,4 @@ class PostMedia(models.Model):
     subpost = models.ForeignKey(Post, on_delete=models.CASCADE, default=None, null=True, related_name='subpost_media_files')
 
     def __str__(self):
-        return f"Media for Post: {self.post.title}"
+        return f"Media for Post: {self.post.title}---{self.subpost.id if self.subpost else None}"

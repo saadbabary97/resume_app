@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from media_file.serializers import PhotoSerializer, VideoSerializer
+from media_file.serializers import PostMedia, PostSerializer
 from .models import Post, PostMedia
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -8,9 +8,11 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+
 # Get request for Media files
-
-
 def get_posts(request):
     posts = Post.objects.all()
     serialized_posts = []
@@ -28,6 +30,7 @@ def get_posts(request):
             'title': post.title,
             'created_at': post.created_at,
             'updated_at': post.updated_at,
+            'is_subpost':post.is_subpost,
             'user': {
                 'username': post.user.username if post.user else None,
                 'email': post.user.email if post.user else None,
@@ -38,9 +41,21 @@ def get_posts(request):
     return JsonResponse({'posts': serialized_posts})
 
 
+# Get request for Single Post
+class SinglePostView(APIView):
+    permission_classes = (AllowAny,)
+
+    def get(self, request, post_id):
+        try:
+            post = Post.objects.get(id=post_id)
+            serializer = PostSerializer(post)
+            return Response(serializer.data)
+        except Post.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+
 # Post request for Media files
 
-# @csrf_exempt
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def create_post(request):
@@ -68,13 +83,13 @@ def create_post(request):
         for video in videos:
             subpost = Post.objects.create(user=user, is_subpost=True)
             post_video = PostMedia.objects.create(video=video, post=post, subpost=subpost)
-            serializer = VideoSerializer(post_video)
+            serializer = PostMedia(post_video)
             serialized_objects.append(serializer.data)
 
         for image in images:
             subpost = Post.objects.create(is_subpost=True, user=user)
             post_image = PostMedia.objects.create(image=image, post=post, subpost=subpost)
-            serializer = PhotoSerializer(post_image)
+            serializer = PostMedia(post_image)
             serialized_objects.append(serializer.data)
 
         if stickers:
