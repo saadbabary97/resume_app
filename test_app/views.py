@@ -297,8 +297,6 @@ def update_experience(request, id):
         return Response(serializer.data, status=status.HTTP_200_OK)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
-
 @api_view(['DELETE'])
 @permission_classes([AllowAny])
 def delete_experience(request, id):

@@ -28,3 +28,33 @@ class PostMedia(models.Model):
 
     def __str__(self):
         return f"Media for Post: {self.post.title}---{self.subpost.id if self.subpost else None}"
+class PostReaction(models.Model):
+    REACTION_CHOICES = (
+        ('like', 'Like'),
+        ('dislike', 'Dislike'),
+        ('love', 'Love'),
+        ('haha', 'Haha'),
+        ('wow', 'Wow'),
+        ('angry', 'Angry'),
+        ('sad', 'Sad'),
+    )
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="post_reactions")
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name="post_reactions")
+    reaction_type = models.CharField(max_length=20, choices=REACTION_CHOICES,) 
+
+    def __str__(self):
+        return f"{self.user.username} reacted to post {self.post.id} with {self.reaction_type}"
+
+class Comment(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="user_comments", blank=True)
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name="post_comments", blank=True)
+    comment_body = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.comment_body}-{self.user.username}"
+
+    class Meta:
+        ordering = ('-created_at',)
