@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from PIL import Image
-import os
+from django.core.exceptions import ValidationError
 from django.core.validators import FileExtensionValidator
 
 
@@ -28,6 +28,21 @@ class PostMedia(models.Model):
 
     def __str__(self):
         return f"Media for Post: {self.post.title}---{self.subpost.id if self.subpost else None}"
+    
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)  
+
+        if self.image:
+            try:
+                image = Image.open(self.image.path)
+                if image.mode != 'RGB':
+                    image = image.convert('RGB')
+                image.save(self.image.path, format='JPEG', quality=20, optimize=True)
+            except Exception as e:
+                raise ValidationError(str(e))
+
+
+
 class PostReaction(models.Model):
     REACTION_CHOICES = (
         ('like', 'Like'),
@@ -58,3 +73,20 @@ class Comment(models.Model):
 
     class Meta:
         ordering = ('-created_at',)
+class SharePost(models.Model):
+    SHARE_REACTION_CHOICES = (
+        ('like', 'Like'),
+        ('haha', 'Haha'),
+    )
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="user_share")
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name="post_share")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    share_reaction = models.CharField(max_length=20, choices=SHARE_REACTION_CHOICES, null=True, default=None)
+    share_comment =  models.CharField(max_length=255, null=True, default=None)
+
+    def __str__(self):
+        return f"{self.user.username} shared post {self.post.id}"
+
+    class Meta:
+        unique_together = ('user', 'post')

@@ -80,16 +80,34 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Database
 # https://docs.djangoproject.com/en/3.1/ref/settings/#databases
 
+
+#DB-Sqlite:
+
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',  
+#         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+#         'USER': 'resumeapp',    
+#         'PASSWORD': 'resumeapp',  
+#         'HOST': 'localhost',   
+#         'PORT': '9001',  
+#     }
+# }
+
+
+#DB-postgresql:
+
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',  
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-        'USER': 'mydbuser',    
-        'PASSWORD': 'mypassword',  
-        'HOST': 'localhost',   
-        'PORT': '9001',  
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',  
+        'NAME': 'resumeapp',
+        'USER': 'resumeapp',    
+        'PASSWORD': 'resumeapp',  
+        'HOST': '127.0.0.1',   
+        'PORT': '5432',  
     }
 }
+
 
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
@@ -97,22 +115,11 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework.authentication.TokenAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
     ),
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
     'TIME_INPUT_FORMATS': ('%H:%M',),
 }
 
-
-
-# AUTHENTICATION_BACKENDS = [
-#     'django.contrib.auth.backends.ModelBackend',
-# ]
-
-# AUTHENTICATION_CLASSES = (
-#     'django.contrib.auth.backends.ModelBackend',  # Use the default ModelBackend for authentication.
-# )
 
 AUTH_USER_MODEL = 'auth.User' 
 

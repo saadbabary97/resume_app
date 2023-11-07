@@ -3,6 +3,7 @@ from rest_framework import serializers
 from test_app.models import Education, WorkExperience, Skill, Hobby, Portfolio
 from django.contrib.auth import get_user_model, authenticate
 from django.contrib.auth.models import User
+from rest_framework.authtoken.models import Token
 
 
 class EducationSerializer(serializers.ModelSerializer):
@@ -49,6 +50,7 @@ class UserRegisterSerializer(serializers.ModelSerializer):
         user = User(**validated_data)
         user.set_password(password)  
         user.save()
+        Token.objects.create(user=user)
         return user
 
 class UserLoginSerializer(serializers.Serializer):
