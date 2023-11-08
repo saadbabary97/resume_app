@@ -1,6 +1,6 @@
 from django.shortcuts import render
-from media_file.serializers import PostMedia, PostSerializer, PostReactionSerializer, PostCommentSerializer, PostShareSerializer, MediaSerializer, GetReactionSerializer
-from .models import Post, PostMedia, PostReaction, Comment, SharePost
+from media_file.serializers import PostMedia, PostSerializer, PostReactionSerializer, PostCommentSerializer, PostShareSerializer, MediaSerializer, FriendRequestSerializer
+from .models import Post, PostMedia, PostReaction, Comment, SharePost, UserFriends
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
@@ -10,6 +10,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from django.db.models import Q
 
 # Get request for Media files
 
@@ -225,13 +226,104 @@ def create_share(request):
 
 
 #Sinlge Api for Reaction count
-class ReactionCountView(APIView):
+class GetFriendRequest(APIView):
     permission_classes = (IsAuthenticated,)
-    pass 
-    # def get(self, request, post_id):
-    #     try:
-    #         reactions_count = PostReaction.objects.get(id=post_id)
-    #         data = {'count': reactions_count}
-    #         return Response(data)
-    #     except PostReaction.DoesNotExist:
-    #         return Response(status=status.HTTP_404_NOT_FOUND)
+    
+    def get(self, request):
+        try:
+            user = request.user
+            print(user)
+            friend_request_users = UserFriends.objects.filter(user=user)
+            print(friend_request_users)
+            serializer = FriendRequestSerializer(friend_request_users, many=True)
+            print(serializer)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response({'Error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def friendrequestpost(request):
+    user = request.user
+    requested_by_id = request.data.get('requested_by',)
+    cancel_request_id = request.data.get('cancel_request',)
+    friends_id = request.data.get('friends',)
+
+    user_friends, created = UserFriends.objects.get_or_create(user=user)
+
+    if requested_by_id:
+        try:
+            requested_by_user = User.objects.get(id=requested_by_id)
+            user_friends.requested_by.add(requested_by_user)
+        except User.DoesNotExist:
+            return Response({'error': 'Requested user does not exist.'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    if cancel_request_id:
+        try:
+            cancel_request_user = User.objects.get(id=cancel_request_id)
+            user_friends.cancel_request.add(cancel_request_user)
+        except User.DoesNotExist:
+            return Response({'error': 'Cancel request user does not exist.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    if friends_id:
+        try:
+            friends_user = User.objects.get(id=friends_id)
+            user_friends.friends.add(friends_user)
+        except User.DoesNotExist:
+            return Response({'error':'Friend user does not exist.'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    serializer = FriendRequestSerializer(user_friends)
+    return Response(serializer.data)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def suggest_friends(request):
+    user = request.user
+    suggestions = []
+
+    user_friends, created = UserFriends.objects.get_or_create(user=user)
+
+    if user_friends:
+        friends_id = user_friends.friends.values_list('id', flat=True)
+        print("friends_id:",friends_id)
+        requested_by_id = user_friends.requested_by.values_list('id', flat=True)
+        print("requested_by_id:",requested_by_id)
+        cancel_request_id = user_friends.cancel_request.values_list('id', flat=True)
+        print("cancel_request_id:",cancel_request_id)
+
+        users_to_exclude = list(friends_id) + list(requested_by_id) + list(cancel_request_id) + [user.id]
+        print("users_to_exclude:",users_to_exclude)
+
+        suggested_users = User.objects.filter(is_active=True).exclude(id__in=users_to_exclude)
+        print("suggested_users:",suggested_users)
+
+        suggestions = [{'id': user.id, 'username': user.username} for user in suggested_users]
+
+    return Response(suggestions)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def suggest_friends(request):
+    user = request.user
+    suggestions = []
+
+    user_friends, created = UserFriends.objects.get_or_create(user=user)
+
+    if user_friends:
+        
+        friends_id = user_friends.friends.values_list('id', flat=True)
+        print("friends_id:",friends_id)
+        requested_by_id = user_friends.requested_by.values_list('id', flat=True)
+        print("requested_by_id:",requested_by_id) 
+        cancel_request_id = user_friends.cancel_request.values_list('id', flat=True)
+        print("cancel_request_id:",cancel_request_id)
+        
+        exclusion_conditions = Q(id__in=friends_id) | Q(id__in=requested_by_id) | Q(id__in=cancel_request_id) | Q(id=user.id)
+        print("users_to_exclude:",exclusion_conditions)
+        
+        suggested_users = User.objects.filter(is_active=True).exclude(exclusion_conditions)
+        print("suggested_users:",suggested_users)
+        
+        suggestions = [{'id': user.id, 'username': user.username} for user in suggested_users]
+
+    return Response(suggestions)

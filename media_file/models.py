@@ -90,3 +90,13 @@ class SharePost(models.Model):
 
     class Meta:
         unique_together = ('user', 'post')
+
+class UserFriends(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="user_friend")
+    requested_by = models.ManyToManyField(User, related_name="friend_requests", null=True
+                                          )
+    cancel_request = models.ManyToManyField(User, related_name="cancel_requests", null=True
+                                            ) 
+    friends = models.ManyToManyField(User, related_name="friends", null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)

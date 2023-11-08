@@ -1,5 +1,5 @@
 from django.contrib import admin
-from media_file.models import Post, PostMedia, PostReaction, Comment, SharePost
+from media_file.models import Post, PostMedia, PostReaction, Comment, SharePost, UserFriends
 
 class PostAdmin(admin.ModelAdmin):
     list_display = (
@@ -23,10 +23,14 @@ class PostCommentAdmin(admin.ModelAdmin):
     search_fields = ('user__email',)
     ordering = ()
 
+class SharePostAdmin(admin.ModelAdmin):
+    list_display = ('user', 'post', 'created_at', 'updated_at', 'share_reaction', 'share_comment')
+    search_fields = ('user__email', )
 
 admin.site.register(Post, PostAdmin)
 admin.site.register(PostMedia, PostMediaAdmin)
 admin.site.register(PostReaction, PostReactionAdmin)
 admin.site.register(Comment, PostCommentAdmin)
-admin.site.register(SharePost)
+admin.site.register(SharePost, SharePostAdmin)
+admin.site.register(UserFriends)
 # Register your models here.

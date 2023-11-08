@@ -15,5 +15,9 @@ urlpatterns = [
     path('create_share/', views.create_share, name='create_share'),
 
 
-    path('get_reaction_count/', views.ReactionCountView.as_view(), name='get_single_post'),
+    path('get_request/', views.GetFriendRequest.as_view(), name='get_request'),
+    # path('get_suggestion/', views.GetSuggestions.as_view(), name='get_suggestion'),
+
+    path('get_suggestion', views.suggest_friends, name='get_suggestion'),
+    path('creata_request', views.friendrequestpost, name='creata_request'),
 ]

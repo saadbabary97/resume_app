@@ -1,7 +1,7 @@
 from requests import Response
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import Post, PostMedia, PostReaction, Comment, SharePost
+from .models import Post, PostMedia, PostReaction, Comment, SharePost, UserFriends
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -108,3 +108,47 @@ class PostCommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
         fields = ['post', 'comment_body', 'created_at', 'updated_at']
+
+class FriendRequestSerializer(serializers.ModelSerializer):
+    user = serializers.SerializerMethodField()
+    requested_by = serializers.SerializerMethodField()
+    # cancel_request = serializers.SerializerMethodField()
+
+    class Meta:
+        model = UserFriends
+        fields = ['id', 'user', 'requested_by']
+
+    def get_user(self, instance):
+        user = instance.user
+        return {
+            'id': user.id,
+            'first_name': user.first_name if user.first_name else "",
+            'last_name': user.last_name if user.last_name else "",
+        }
+
+    def get_requested_by(self, instance):
+        requested_by = instance.requested_by.first()
+        return {
+            'id': requested_by.id if requested_by else "",
+            'first_name': requested_by.first_name if requested_by and requested_by.first_name else "",
+            'last_name': requested_by.last_name if requested_by and requested_by.last_name else "",
+        }
+
+    # def get_cancel_request(self, instance):
+    #     cancel_request = instance.cancel_request.first()
+    #     return {
+    #         'id': cancel_request.id if cancel_request else "",
+    #         'first_name': cancel_request.first_name if cancel_request and cancel_request.first_name else "",
+    #         'last_name': cancel_request.last_name if cancel_request and cancel_request.last_name else "",
+    #     }
+
+    # def get_friends(self, instance):
+    #     friends = instance.friends.first()
+    #     return {
+    #         'id': friends.id if friends else "",
+    #         'first_name': friends.first_name if friends and friends.first_name else "",
+    #         'last_name': friends.last_name if friends and friends.last_name else "",
+    #     }
+    
+    
+    
